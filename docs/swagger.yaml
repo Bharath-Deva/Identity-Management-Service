@@ -1,0 +1,1171 @@
+openapi: 3.0.3
+info:
+  title: Attendence Management System
+  description: |-
+    Attendence Management System is a time tracker and leave management app that lets you track work hours and leave approvals of all employees across projects.
+  termsOfService: http://localhost:8090
+  contact:
+    email: apiteam@swagger.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.11
+servers:
+  - url: http://localhost:8080/api
+tags:
+  - name: Authenticate
+  - name: Project
+  - name: Task
+paths:
+  /v1/login:
+    post:
+      tags:
+        - Authenticate
+      summary: Login for super admin
+      description: 'allows super admin to enter into AMS system using email and password'
+      parameters:
+        - name: authorization
+          in: header
+          description: Basic Authentication - Base64 encoded(userName:password)
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /v1/authenticate:
+    post:
+      tags:
+        - Authenticate
+      description: ''
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                authCode:
+                  type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - type: object
+                            properties:
+                              profile:
+                                $ref: '#/components/schemas/Profile'
+                          - $ref: '#/components/schemas/LoginResponse'
+        '301':
+          description: redirect to sign up page
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 301
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      redirectUri:
+                        type: string
+                        example: http://localhost:8080/signup
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 400
+                  response:
+                    type: boolean
+                    example: false
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: number
+                        example: 400
+                      message:
+                        type: string
+                        example: invalid auth code
+                      restStatus:
+                        type: string
+                        example: "BAD_REQUEST"
+        '503':
+          description: Microsoft Service Unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 503
+                  response:
+                    type: boolean
+                    example: false
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: number
+                        example: 400
+                      message:
+                        type: string
+                        example: microsoft service unavailable
+                      restStatus:
+                        type: string
+                        example: "SERVICE_UNAVAILABLE"
+  /v1/signup:
+    post:
+      tags:
+        - Authenticate
+      description: ''
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                officialEmployeeId:
+                  type: string
+                  example: FC070
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Employee'
+  /v1/projects:
+    post:
+      tags:
+        - Project
+      description: To create a new project
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectName:
+                  type: string
+      responses:
+        '201':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 201
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Project'
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '409':
+          description: Already Exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlreadyExist'
+
+  /v1/Projects:
+    get:
+      tags:
+        - Project
+      description: To returns a list of projects with pagination
+      parameters:
+        - in: query
+          name: employeeId
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: page
+          description: The page number to retrieve
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: size
+          description: The number of projects per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      projects:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+                  pageable:
+                    type: object
+                    properties:
+                      sort:
+                        type: object
+                        properties:
+                          unsorted:
+                            type: boolean
+                            example: true
+                          sorted:
+                            type: boolean
+                            example: false
+                          empty:
+                            type: boolean
+                            example: true
+                      offSet:
+                        type: integer
+                        example: 0
+                      pageSize:
+                        type: integer
+                        example: 2
+                      pageNumber:
+                        type: integer
+                        example: 0
+                      paged:
+                        type: boolean
+                        example: true
+                      unPages:
+                        type: boolean
+                        example: false
+                  totalPages:
+                    type: integer
+                    example: 5
+                  totalElements:
+                    type: integer
+                    example: 10
+                  last:
+                    type: boolean
+                    example: false
+                  size:
+                    type: integer
+                    example: 2
+                  number:
+                    type: integer
+                    example: 0
+                  sort:
+                    type: object
+                    properties:
+                      unsorted:
+                        type: boolean
+                        example: true
+                      sorted:
+                        type: boolean
+                        example: false
+                      empty:
+                        type: boolean
+                        example: true
+                  first:
+                    type: boolean
+                    example: true
+                  numberOfElements:
+                    type: integer
+                    example: 2
+                  empty:
+                    type: boolean
+                    example: false
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectNotFound'
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /v1/projects/{projectId}/employees/{employeeId}:
+    put:
+      tags:
+        - Project
+      description: To map and unmap project to an employee
+      parameters:
+        - name: projectId
+          in: path
+          description: id of the project
+          required: True
+          schema:
+            type: integer
+        - name: employeeId
+          in: path
+          description: id of the project
+          required: True
+          schema:
+            type: integer
+        - name: delete
+          in: query
+          required: true
+          schema:
+            type: boolean
+            enum: [true,false]
+            default: false
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example:  employee FEC0032 is mapped to project EDENRED01 successfully
+        '202':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: employee FEC0032 is unmapped to project EDENRED01 successfully
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectNotFound'
+  /v1/projects/{projectId}:
+    put:
+      tags:
+        - Project
+      description: To update a single project by projectId.
+      parameters:
+        - name: projectId
+          in: path
+          description: id of the project
+          required: True
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectName:
+                  type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: project EDENRED01 is updated successfully
+
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectNotFound'
+    delete:
+      tags:
+        - Project
+      description: To delete a project by projectId
+      operationId: deleteProject
+      parameters:
+        - name: projectId
+          in: path
+          description: ID of project to delete
+          required: true
+          schema:
+            type: integer
+            format: numbers
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: project EDENRED01 is deleted successfully
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectNotFound'
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  /v1/projects/{projectId}/employees/{employeeId}/tasks:
+    post:
+      tags:
+        - Task
+      description: To create task by employeeId and projectId
+      parameters:
+        - name: employeeId
+          in: path
+          description: id of the employee to add task
+          required: true
+          schema:
+            type: integer
+        - name: projectId
+          in: path
+          description: id of the project to add
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskName:
+                  type: string
+                taskDescription:
+                  type: string
+                userStoryId:
+                  type: integer
+                  example: 2
+                taskDuration:
+                  type: integer
+                  format: int32
+                  example: 8
+      responses:
+        '201':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 201
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TaskGet'
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '409':
+          description: Already Exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlreadyExist'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeNotFound'
+
+  /v1/tasks:
+    get:
+      tags:
+        - Task
+      description:  To returns a list of tasks details with pagination
+      parameters:
+        - name: employeeId
+          in: query
+          description: id of the employee to get task details
+          required: false
+          schema:
+            type: integer
+        - name: projectId
+          in: query
+          description: id of the project to get task details
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: page
+          description: The page number to retrieve
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: size
+          description: The number of projects per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description:  successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      tasks:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskGet'
+                  pageable:
+                    type: object
+                    properties:
+                      sort:
+                        type: object
+                        properties:
+                          unsorted:
+                            type: boolean
+                            example: true
+                          sorted:
+                            type: boolean
+                            example: false
+                          empty:
+                            type: boolean
+                            example: true
+                      offSet:
+                        type: integer
+                        example: 0
+                      pageSize:
+                        type: integer
+                        example: 2
+                      pageNumber:
+                        type: integer
+                        example: 0
+                      paged:
+                        type: boolean
+                        example: true
+                      unPages:
+                        type: boolean
+                        example: false
+                  totalPages:
+                    type: integer
+                    example: 5
+                  totalElements:
+                    type: integer
+                    example: 10
+                  last:
+                    type: boolean
+                    example: false
+                  size:
+                    type: integer
+                    example: 2
+                  number:
+                    type: integer
+                    example: 0
+                  sort:
+                    type: object
+                    properties:
+                      unsorted:
+                        type: boolean
+                        example: true
+                      sorted:
+                        type: boolean
+                        example: false
+                      empty:
+                        type: boolean
+                        example: true
+                  first:
+                    type: boolean
+                    example: true
+                  numberOfElements:
+                    type: integer
+                    example: 2
+                  empty:
+                    type: boolean
+                    example: false
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskNotFound'
+  /v1/tasks/{taskId}:
+    put:
+      tags:
+        - Task
+      description: To update the single task by task id
+      parameters:
+        - name: taskId
+          in: path
+          description: Id of the task to updated
+          required: True
+          schema:
+            type: integer
+            format: numbers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                taskName:
+                  type: string
+                taskDescription:
+                  type: string
+                userStoryId:
+                  type: integer
+                  example: 2
+                taskDuration:
+                  type: integer
+                  format: int32
+                  example: 8
+                taskStatus:
+                  type: string
+                  enum: [ "TODO", "IN_PROGRESS", "COMPLETED"]
+                  default: COMPLETED
+      responses:
+        '201':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 201
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: task TASK01 is updated successfully
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+        '404':
+          description: task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskNotFound'
+    delete:
+      tags:
+        - Task
+      description: To delete a single task by taskId
+      parameters:
+        - name: taskId
+          in: path
+          description: taskId to delete task
+          required: True
+          schema:
+            type: integer
+            format: numbers
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                    example: 200
+                  response:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: task TASK01 is deleted successfully
+        '404':
+          description: task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskNotFound'
+        '400':
+          description: Invalid  value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+
+components:
+  schemas:
+    Employee:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: numbers
+          example: 1
+        name:
+          type: string
+          example: samyuktha
+        officialId:
+          type: string
+          example: FC001
+        image:
+          type: string
+          format: byte
+        email:
+          type: string
+          example: Bharath@flyerssoft.com
+        description:
+          type: string
+          example: software developer
+        primaryManager:
+          type: integer
+          example: 1
+        secondaryManager:
+          type: integer
+          example: 1
+        workPlace:
+          type: string
+          example: chennai
+        mobileNumber:
+          type: string
+          example: +91 7546786577
+        emergencyContact:
+          type: string
+          example: +91 7546786577
+        createdAt:
+          type: string
+          format: date-time
+    EmployeeNotFound:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        response:
+          type: boolean
+          example: false
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: Employee Not Found
+            restStatus:
+              type: string
+              example: NOT_FOUND
+    ProjectNotFound:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        response:
+          type: boolean
+          example: false
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: Project Not Found
+            restStatus:
+              type: string
+              example: NOT_FOUND
+    TaskNotFound:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        response:
+          type: boolean
+          example: false
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: Task Not Found
+            restStatus:
+              type: string
+              example: NOT_FOUND
+    AlreadyExist:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 409
+        response:
+          type: boolean
+          example: false
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: Already Exist
+            restStatus:
+              type: string
+              example: ALREADY-EXIST
+
+    BadRequest:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Invalid Credentials
+        error:
+          type: boolean
+          example: false
+    EmployeeGet:
+      type: object
+      properties:
+        employee:
+          $ref: '#/components/schemas/Employee'
+        project:
+          $ref: '#/components/schemas/Project'
+    ProjectGets:
+      type: object
+      properties:
+        project:
+          $ref: '#/components/schemas/Project'
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: numbers
+          example: 1
+        taskKey:
+          type: string
+          example: FLTK
+        taskName:
+          type: string
+          example: swagger-documentation
+        taskDescription:
+          type: string
+          example: button need to be implemented
+        userStoryId:
+          type: integer
+          example: 2
+        projectName:
+          type: string
+          example: edenred
+        taskDuration:
+          type: integer
+          description: the total hours taken by the employee to complete that task
+          format: int32
+          example: 8
+        createdAt:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        taskStatus:
+          type: string
+          enum: [ "TODO", "IN_PROGRESS", "COMPLETED" ]
+          default: TODO
+        employee:
+          $ref: '#/components/schemas/Employee'
+        project:
+          $ref: '#/components/schemas/Project'
+    TaskS:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: numbers
+          example: 1
+        taskKey:
+          type: string
+          example: FLTK
+        taskName:
+          type: string
+          example: swagger-documentation
+        taskDescription:
+          type: string
+          example: button need to be implemented
+        userStoryId:
+          type: integer
+          example: 2
+        projectName:
+          type: string
+          example: edenred
+        taskDuration:
+          type: integer
+          description: the total hours taken by the employee to complete that task
+          format: int32
+          example: 8
+        createdAt:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        taskStatus:
+          type: string
+          enum: [ "TODO", "IN_PROGRESS", "COMPLETED" ]
+          example: COMPLETED
+        employee:
+          $ref: '#/components/schemas/Employee'
+        project:
+          $ref: '#/components/schemas/Project'
+    LoginResponse:
+      type: object
+      properties:
+        profile:
+          $ref: '#/components/schemas/Profile'
+        expires_in:
+          type: string
+          example: 4416
+        access_token:
+          type: string
+          example: eyJ0eXAiOiJKV1QiLCJub25jZSI6IjZOZnNhTXVBVW9iM2NSOWpHaUxGNU9uRzlVS09TZXM1TlAtLXJhOWE5SWsiLCJhbGciOiJSUzI1NiIsIng1dCI6Ii1LSTNROW5OUjdiUm9meG1lWm9YcWJIWkdldyIsImtpZCI6Ii1LSTNROW5OUjdiUm9meG1lWm9YcWJIWkdldyJ9
+
+    ApiResponse:
+      type: object
+      properties:
+        statuscode:
+          type: integer
+          format: int32
+          example: 200
+        response:
+          type: boolean
+          example: true
+    Profile:
+      type: object
+      properties:
+        employeeName:
+          type: string
+          example: Bharath Devarajan,
+        employeeDesignation:
+          type: string
+          example: Associate Software Engineer ,
+        employeeImage:
+          type: string
+        employeeEmail:
+          type: string
+          example: bharath.d@flyerssoft.com,
+        employeeOfficialId:
+          type: string
+          example: FS001,
+        employeeMobileNumber:
+          type: string
+          example: +919894820022
+        employeeLocation:
+          type: string
+          example: Chennai,
+        employeeId:
+          type: number
+          example: 1
+    TaskGet:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: numbers
+          example: 1
+        taskName:
+          type: string
+          example: swagger-documentation
+        taskKey:
+          type: string
+          example: "FLTK001"
+        taskDescription:
+          type: string
+          example: button need to be implemented
+        userStoryId:
+          type: integer
+          example: 2
+        projectName:
+          type: string
+          example: edenred
+        taskDuration:
+          type: integer
+          description: the total hours taken by the employee to complete that task
+          format: int32
+          example: 8
+        taskStatus:
+          type: string
+          enum: [ "TODO", "PROGRESS", "COMPLETED" ]
+          default: TODO
+        createdAt:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+      xml:
+        name: category
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        projectName:
+          type: string
+          example: Eden Red
+        EmployeeCount:
+          type: integer
+          example: 0
+        createdAt:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+
+  requestBodies:
+    Pet:
+      description: ams object that needs to be added to the store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Employee'
+    UserArray:
+      description: List of user object
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Employee'

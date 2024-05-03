@@ -1,0 +1,44 @@
+server:
+    port: 8090
+    servlet:
+        context-path: /api
+spring:
+    datasource:
+        password: root
+        url: jdbc:postgresql://localhost:5432/ims
+        username: postgres
+    jpa:
+        hibernate:
+            ddl-auto: update
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+        show-sql: true
+    jackson:
+        mapper:
+            ACCEPT_CASE_INSENSITIVE_ENUMS: true
+auth:
+    signup:
+        redirection-url: http://localhost:8090/api/v1/authenticate
+super-admin:
+    password: $2a$10$1n3RStjHypQrzk2jNyllH.GLSAV3UGr/5BBXY9d/.VJzH1nfi4qTm
+security:
+    jwt:
+        secret-key: NDEzRjQ0Mjg0NzJCNEI2MjUwNjU1MzY4NTY2RDU5NzEzMzc0MzY3NzM5NzkyNDQyMjY0NTI5NDg0MDRENjM1MQ==
+        expiration: 86400000
+        basic:
+            enabled: false
+api:
+    microsoft:
+        graph:
+            baseUrl: https://graph.microsoft.com/
+        sso:
+            baseUrl: https://login.microsoftonline.com/
+            client:
+                id: 958919d3-89a2-4693-9708-8736c5081ad0
+                secret: .kI8Q~CDX-RdrvXHwWBSBDUWsVCKpokP1f4XBbwS
+            tenant:
+                id: e9e01aeb-0714-4b1b-a24a-7b3ce93f54c4
+            scopes: api://36742c7b-cbb5-4a35-9b39-f0a41ec954ce/Record.Read
+            redirectUri: http://localhost:8090/flyerssoft-ams
+            grantType: authorization_code
